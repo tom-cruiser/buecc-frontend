@@ -8,12 +8,11 @@ import {
   Trash2,
   Eye,
   Search,
-  Filter,
   Loader2,
   AlertCircle,
   Image as ImageIcon,
 } from "lucide-react";
-import PropertyForm from "../../components/admin/ConstructionProjectForm";
+import PropertyForm from "../../components/admin/PropertyForm";
 import { useNavigate } from "react-router-dom";
 
 const AdminProperties: React.FC = () => {
@@ -26,8 +25,7 @@ const AdminProperties: React.FC = () => {
     error: propertiesError,
     deleteProperty,
     fetchProperties,
-    createProperty,
-    updateProperty,
+    
   } = useProperties();
 
   const [showForm, setShowForm] = useState(false);
@@ -44,16 +42,16 @@ const AdminProperties: React.FC = () => {
 
     // Handle both string and object image formats
     const firstImage = property.images[0];
-    let url =
+    const url =
       typeof firstImage === "string" ? firstImage : firstImage?.url || "";
 
     // Convert relative paths to absolute URLs in production
-    if (process.env.NODE_ENV === "production" && url.startsWith("/uploads/")) {
+    if (import.meta.env.PROD && url.startsWith("/uploads/")) {
       return `${window.location.origin}${url}`;
     }
 
     // Handle development environment with local server
-    if (process.env.NODE_ENV === "development" && url.startsWith("/uploads/")) {
+    if (import.meta.env.DEV && url.startsWith("/uploads/")) {
       return `http://localhost:5000${url}`; // Adjust port if different
     }
 
@@ -61,11 +59,19 @@ const AdminProperties: React.FC = () => {
   };
 
   // Enhanced safeGet with proper typing
-  const safeGet = <T,>(obj: any, path: string, defaultValue: T): T => {
-    const result = path.split(".").reduce((current, key) => {
-      return current && current[key] !== undefined ? current[key] : undefined;
-    }, obj);
-    return result !== undefined ? result : defaultValue;
+  const safeGet = <T,>(obj: unknown, path: string, defaultValue: T): T => {
+    try {
+      const parts = path.split(".");
+      let cur: unknown = obj;
+      for (const p of parts) {
+        if (cur == null || typeof cur !== "object") return defaultValue;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        cur = (cur as any)[p];
+      }
+      return (cur !== undefined ? cur : defaultValue) as T;
+    } catch {
+      return defaultValue;
+    }
   };
 
   const filteredProperties = properties.filter((property) => {
@@ -104,6 +110,8 @@ const AdminProperties: React.FC = () => {
           setActionError("Failed to delete property. Please try again.");
         }
       } catch (error) {
+        // Log error and show message
+        console.error("Delete property error:", error);
         setActionError("An error occurred while deleting the property.");
       }
     }
@@ -114,23 +122,7 @@ const AdminProperties: React.FC = () => {
     setEditingProperty(null);
   };
 
-  const handleFormSubmit = async (propertyData: Partial<Property>) => {
-    setActionError(null);
-    try {
-      if (editingProperty && editingProperty._id) {
-        const result = await updateProperty(editingProperty._id, propertyData);
-        if (!result) throw new Error("Failed to update property");
-      } else {
-        const result = await createProperty(propertyData);
-        if (!result) throw new Error("Failed to create property");
-      }
-      handleCloseForm();
-    } catch (error) {
-      setActionError(
-        error instanceof Error ? error.message : "An error occurred"
-      );
-    }
-  };
+  // PropertyForm handles create/update via PropertyContext directly, so no external submit handler is required.
 
   const getStatusColor = (status: string = "") => {
     switch (status) {
@@ -420,11 +412,7 @@ const AdminProperties: React.FC = () => {
       </div>
 
       {showForm && (
-        <PropertyForm
-          property={editingProperty}
-          onClose={handleCloseForm}
-          onSubmit={handleFormSubmit}
-        />
+        <PropertyForm property={editingProperty} onClose={handleCloseForm} />
       )}
     </div>
   );

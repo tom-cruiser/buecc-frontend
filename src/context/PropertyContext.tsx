@@ -49,22 +49,9 @@ export const PropertiesProvider: React.FC<{ children: ReactNode }> = ({
   const [error, setError] = useState<string | null>(null);
 
   const fetchProperties = useCallback(async () => {
+    // Public listing: don't require authentication to fetch properties.
     if (isAuthLoading) {
       setLoading(true);
-      return;
-    }
-
-    if (!isAuthenticated) {
-      setProperties([]);
-      setError("Authentication required to fetch properties.");
-      setLoading(false);
-      return;
-    }
-
-    const token = getToken();
-    if (!token) {
-      setError("Missing authentication token.");
-      setLoading(false);
       return;
     }
 
@@ -72,12 +59,14 @@ export const PropertiesProvider: React.FC<{ children: ReactNode }> = ({
     setError(null);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/properties`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
+      // If available, include token for additional data, but don't fail without it
+      const token = getToken();
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+      if (token) headers.Authorization = `Bearer ${token}`;
+
+      const response = await fetch(`${API_BASE_URL}/properties`, { headers });
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
@@ -89,13 +78,14 @@ export const PropertiesProvider: React.FC<{ children: ReactNode }> = ({
 
       const { data } = await response.json();
       setProperties(data);
-    } catch (err: any) {
-      setError(err.message || "Failed to load properties.");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setError(msg || "Failed to load properties.");
       setProperties([]);
     } finally {
       setLoading(false);
     }
-  }, [isAuthenticated, isAuthLoading, getToken]);
+  }, [isAuthLoading, getToken]);
 
   const createProperty = useCallback(
     async (propertyData: Omit<Property, "_id">, files?: File[]) => {
@@ -142,8 +132,9 @@ export const PropertiesProvider: React.FC<{ children: ReactNode }> = ({
         const { data } = await response.json();
         setProperties((prev) => [...prev, data]);
         return data;
-      } catch (err: any) {
-        setError(err.message || "Failed to create property.");
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err);
+        setError(msg || "Failed to create property.");
         return null;
       } finally {
         setLoading(false);
@@ -201,8 +192,9 @@ export const PropertiesProvider: React.FC<{ children: ReactNode }> = ({
           )
         );
         return data;
-      } catch (err: any) {
-        setError(err.message || "Failed to update property.");
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err);
+        setError(msg || "Failed to update property.");
         return null;
       } finally {
         setLoading(false);
@@ -245,8 +237,9 @@ export const PropertiesProvider: React.FC<{ children: ReactNode }> = ({
 
         setProperties((prev) => prev.filter((property) => property._id !== id));
         return true;
-      } catch (err: any) {
-        setError(err.message || "Failed to delete property.");
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err);
+        setError(msg || "Failed to delete property.");
         return false;
       } finally {
         setLoading(false);
@@ -298,8 +291,9 @@ export const PropertiesProvider: React.FC<{ children: ReactNode }> = ({
 
         const { data } = await response.json();
         return data;
-      } catch (err: any) {
-        setError(err.message || "Failed to upload images.");
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err);
+        setError(msg || "Failed to upload images.");
         return [];
       } finally {
         setLoading(false);
@@ -344,8 +338,9 @@ export const PropertiesProvider: React.FC<{ children: ReactNode }> = ({
         }
 
         return true;
-      } catch (err: any) {
-        setError(err.message || "Failed to delete image.");
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err);
+        setError(msg || "Failed to delete image.");
         return false;
       } finally {
         setLoading(false);

@@ -30,15 +30,34 @@ const ConstructionServices: React.FC = () => {
     const fetchProjects = async () => {
       try {
         const response = await fetch("http://localhost:5000/api/projects");
+
+        // If server returns non-OK, attempt to parse body for more info
         if (!response.ok) {
-          throw new Error(`API error: ${response.status}`);
+          let bodyText = "";
+          try {
+            const body = await response.text();
+            bodyText = body;
+          } catch {
+            bodyText = "<unreadable response body>";
+          }
+          console.error(
+            `Projects API returned non-OK: ${response.status} ${response.statusText} - ${bodyText}`
+          );
+          setError(
+            `Failed to load projects (server ${response.status}). Please try again later.`
+          );
+          setLoading(false);
+          return;
         }
+
         const data = await response.json();
         setProjects(data.data || []);
         setLoading(false);
       } catch (err) {
         console.error("Failed to fetch projects:", err);
-        setError("Failed to load projects. Please try again later.");
+        // Provide a slightly more specific message including any Error.message
+        const message = err instanceof Error ? err.message : String(err);
+        setError(`Failed to load projects: ${message}`);
         setLoading(false);
       }
     };

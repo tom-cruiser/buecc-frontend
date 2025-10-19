@@ -1,4 +1,5 @@
 // src/context/ConstructionProjectContext.tsx
+/* eslint-disable react-refresh/only-export-components */
 
 import React, {
   createContext,
@@ -55,32 +56,14 @@ export const ConstructionProjectProvider: React.FC<{ children: ReactNode }> = ({
       return;
     }
 
-    // If not authenticated, clear projects and set error
-    if (!isAuthenticated) {
-      setProjects([]);
-      setError("Authentication required to fetch construction projects.");
-      setLoading(false);
-      return;
-    }
-
-    // Get authentication token
-    const token = getToken();
-    if (!token) {
-      setError("Missing authentication token.");
-      setLoading(false);
-      return;
-    }
-
+    // Always attempt a public fetch of projects (no auth required to list projects).
+    // This prevents the admin listing from showing an authentication error when the user
+    // hasn't logged in yet. Create/Update/Delete operations still require authentication.
     setLoading(true);
-    setError(null); // Clear previous errors
+    setError(null);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/construction-projects`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json", // Important for GET requests expecting JSON
-        },
-      });
+      const response = await fetch(`${API_BASE_URL}/projects`);
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({})); // Attempt to parse error message
@@ -91,9 +74,10 @@ export const ConstructionProjectProvider: React.FC<{ children: ReactNode }> = ({
       }
 
       const { data } = await response.json(); // Assuming response is { data: ConstructionProject[] }
-      setProjects(data);
-    } catch (err: any) {
-      setError(err.message || "Failed to load construction projects.");
+      setProjects(data || []);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      setError(message || "Failed to load construction projects.");
       setProjects([]); // Clear projects on error
     } finally {
       setLoading(false);
@@ -122,15 +106,33 @@ export const ConstructionProjectProvider: React.FC<{ children: ReactNode }> = ({
 
       try {
         const formData = new FormData();
-        // Append project data as a JSON string
-        formData.append("project", JSON.stringify(projectData));
-
-        // Append the image file if provided
-        if (imageFile) {
-          formData.append("image", imageFile);
+        // Append individual project fields so backend can read req.body.title, etc.
+        if ((projectData as any).title !== undefined)
+          formData.append("title", String((projectData as any).title));
+        if ((projectData as any).description !== undefined)
+          formData.append("description", String((projectData as any).description));
+        if ((projectData as any).category !== undefined)
+          formData.append("category", String((projectData as any).category));
+        if ((projectData as any).completionDate !== undefined)
+          formData.append("completionDate", String((projectData as any).completionDate));
+        if ((projectData as any).location !== undefined)
+          formData.append("location", String((projectData as any).location));
+        if ((projectData as any).clientTestimonial !== undefined)
+          formData.append(
+            "clientTestimonial",
+            String((projectData as any).clientTestimonial)
+          );
+        if ((projectData as any).services !== undefined) {
+          const sv = (projectData as any).services;
+          formData.append("services", Array.isArray(sv) ? sv.join(",") : String(sv));
         }
 
-        const response = await fetch(`${API_BASE_URL}/construction-projects`, {
+        // Append the image file(s) under 'images' to match multer.array('images')
+        if (imageFile) {
+          formData.append("images", imageFile);
+        }
+
+        const response = await fetch(`${API_BASE_URL}/projects`, {
           method: "POST",
           headers: {
             Authorization: `Bearer ${token}`,
@@ -151,8 +153,9 @@ export const ConstructionProjectProvider: React.FC<{ children: ReactNode }> = ({
         const { data } = await response.json(); // Assuming response is { data: ConstructionProject }
         setProjects((prev) => [...prev, data]); // Add new project to state
         return data;
-      } catch (err: any) {
-        setError(err.message || "Failed to create construction project.");
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err);
+        setError(message || "Failed to create construction project.");
         return null;
       } finally {
         setLoading(false);
@@ -184,24 +187,38 @@ export const ConstructionProjectProvider: React.FC<{ children: ReactNode }> = ({
 
       try {
         const formData = new FormData();
-        // Append project data as a JSON string
-        formData.append("project", JSON.stringify(projectData));
-
-        // Append the new image file if provided
-        if (imageFile) {
-          formData.append("image", imageFile);
+        // Append individual fields to match backend parsing
+        if ((projectData as any).title !== undefined)
+          formData.append("title", String((projectData as any).title));
+        if ((projectData as any).description !== undefined)
+          formData.append("description", String((projectData as any).description));
+        if ((projectData as any).category !== undefined)
+          formData.append("category", String((projectData as any).category));
+        if ((projectData as any).completionDate !== undefined)
+          formData.append("completionDate", String((projectData as any).completionDate));
+        if ((projectData as any).location !== undefined)
+          formData.append("location", String((projectData as any).location));
+        if ((projectData as any).clientTestimonial !== undefined)
+          formData.append(
+            "clientTestimonial",
+            String((projectData as any).clientTestimonial)
+          );
+        if ((projectData as any).services !== undefined) {
+          const sv = (projectData as any).services;
+          formData.append("services", Array.isArray(sv) ? sv.join(",") : String(sv));
         }
 
-        const response = await fetch(
-          `${API_BASE_URL}/construction-projects/${id}`,
-          {
-            method: "PATCH", // Or PUT, depending on your API design
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-            body: formData,
-          }
-        );
+        if (imageFile) {
+          formData.append("images", imageFile);
+        }
+
+        const response = await fetch(`${API_BASE_URL}/projects/${id}`, {
+          method: "PATCH",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          body: formData,
+        });
 
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
@@ -218,8 +235,9 @@ export const ConstructionProjectProvider: React.FC<{ children: ReactNode }> = ({
           )
         );
         return data;
-      } catch (err: any) {
-        setError(err.message || "Failed to update construction project.");
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err);
+        setError(message || "Failed to update construction project.");
         return null;
       } finally {
         setLoading(false);
@@ -247,7 +265,7 @@ export const ConstructionProjectProvider: React.FC<{ children: ReactNode }> = ({
 
       try {
         const response = await fetch(
-          `${API_BASE_URL}/construction-projects/${id}`,
+          `${API_BASE_URL}/projects/${id}`,
           {
             method: "DELETE",
             headers: {
@@ -266,8 +284,9 @@ export const ConstructionProjectProvider: React.FC<{ children: ReactNode }> = ({
 
         setProjects((prev) => prev.filter((project) => project.id !== id)); // Remove project from state
         return true;
-      } catch (err: any) {
-        setError(err.message || "Failed to delete construction project.");
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err);
+        setError(message || "Failed to delete construction project.");
         return false;
       } finally {
         setLoading(false);
@@ -294,38 +313,40 @@ export const ConstructionProjectProvider: React.FC<{ children: ReactNode }> = ({
       setError(null);
 
       try {
+        // The backend expects uploaded files under the 'images' field (array).
         const formData = new FormData();
-        formData.append("image", file); // Key should match backend's expected field name
+        formData.append("images", file);
 
-        const response = await fetch(
-          `${API_BASE_URL}/construction-projects/${projectId}/image`,
-          {
-            method: "POST", // Or PUT if it's always replacing
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-            body: formData,
-          }
-        );
+        const response = await fetch(`${API_BASE_URL}/projects/${projectId}`, {
+          method: "PATCH",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          body: formData,
+        });
 
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
           throw new Error(
-            errorData.message ||
-              `Failed to upload image: ${response.statusText}`
+            errorData.message || `Failed to upload image: ${response.statusText}`
           );
         }
 
-        const { url } = await response.json(); // Assuming response is { url: "..." }
-        // Update the specific project's image URL in the state
-        setProjects((prev) =>
-          prev.map((project) =>
-            project.id === projectId ? { ...project, image: url } : project
-          )
-        );
-        return { url };
-      } catch (err: any) {
-        setError(err.message || "Failed to upload image.");
+        const { data } = await response.json(); // { data: project }
+        // The backend appends new images to data.images; return the last added image URL
+        const newImageUrl = Array.isArray(data.images) ? data.images.slice(-1)[0] : null;
+        if (newImageUrl) {
+          setProjects((prev) =>
+            prev.map((project) =>
+              project.id === projectId ? { ...project, images: data.images } : project
+            )
+          );
+          return { url: newImageUrl };
+        }
+        return null;
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err);
+        setError(message || "Failed to upload image.");
         return null;
       } finally {
         setLoading(false);
@@ -352,34 +373,14 @@ export const ConstructionProjectProvider: React.FC<{ children: ReactNode }> = ({
       setError(null);
 
       try {
-        const response = await fetch(
-          `${API_BASE_URL}/construction-projects/${projectId}/image`, // Endpoint to delete the image
-          {
-            method: "DELETE",
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          throw new Error(
-            errorData.message ||
-              `Failed to delete image: ${response.statusText}`
-          );
-        }
-
-        // Update the specific project's image URL to an empty string or null in the state
-        setProjects((prev) =>
-          prev.map(
-            (project) =>
-              project.id === projectId ? { ...project, image: "" } : project // Set image to empty string
-          )
-        );
-        return true;
-      } catch (err: any) {
-        setError(err.message || "Failed to delete image.");
+        // Backend does not provide a dedicated image-delete endpoint for projects.
+        // Implementing image removal requires backend support to accept an updated images array.
+        // For now, return not-supported and include projectId for better debug.
+        setError(`Delete image is not supported by the current API for project ${projectId}.`);
+        return false;
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err);
+        setError(message || "Failed to delete image.");
         return false;
       } finally {
         setLoading(false);

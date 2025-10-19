@@ -1,6 +1,6 @@
 export interface PropertyImage {
   url: string;
-  filename: string;
+  filename?: string;
   originalName?: string;
   size?: number;
   mimetype?: string;
@@ -32,6 +32,7 @@ export interface Property {
   amenities: string[];
   features: string[];
   yearBuilt?: number;
+  propertyId?: string;
   featured: boolean;
   createdAt: string;
   updatedAt: string;
