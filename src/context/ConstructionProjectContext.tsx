@@ -12,7 +12,8 @@ import React, {
 import { ConstructionProject } from "../types"; // Adjust path as needed
 import { useAuth } from "./AuthContext"; // Assuming you have an AuthContext
 
-const API_BASE_URL = "http://localhost:5000/api"; // Ensure this matches your backend API base URL
+import config from '../config/config';
+const API_BASE_URL = config.API_ENDPOINT; // Ensure this matches your backend API base URL
 
 interface ConstructionProjectContextType {
   projects: ConstructionProject[];

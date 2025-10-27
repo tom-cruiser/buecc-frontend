@@ -9,7 +9,8 @@ import React, {
 import { TeamMember } from "../types";
 import { useAuth } from "./AuthContext";
 
-const API_BASE_URL = "http://localhost:5000/api";
+import config from '../config/config';
+const API_BASE_URL = config.API_ENDPOINT;
 
 interface TeamMemberContextType {
   teamMembers: TeamMember[];

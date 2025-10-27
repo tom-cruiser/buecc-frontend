@@ -8,6 +8,7 @@ import {
   MessageCircle,
   X,
 } from "lucide-react";
+import config from '../config/config';
 
 // Lazy load the map component
 const OfficeMap = React.lazy(() => import("./OfficeMap"));
@@ -183,7 +184,7 @@ const ContactSection: React.FC = () => {
 
     try {
       const response = await fetch(
-        "http://localhost:5000/api/contact/contact",
+        `${config.API_ENDPOINT}/contact/contact`,
         {
           method: "POST",
           headers: {

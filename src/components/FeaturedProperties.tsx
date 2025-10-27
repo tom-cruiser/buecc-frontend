@@ -3,6 +3,7 @@ import PropertyCard from "./PropertyCard";
 import PropertyModal from "./PropertyModal";
 import { Property } from "../types";
 import { ArrowRight } from "lucide-react";
+import config from "../config/config";
 
 const FeaturedProperties: React.FC = () => {
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(
@@ -19,7 +20,7 @@ const FeaturedProperties: React.FC = () => {
         setError(null);
 
         const response = await fetch(
-          "http://localhost:5000/api/properties?featured=true"
+          `${config.API_ENDPOINT}/properties?featured=true`
         );
 
         if (!response.ok) {

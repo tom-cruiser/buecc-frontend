@@ -2,7 +2,8 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-const API_BASE_URL = "http://localhost:5000/api";
+import config from '../config/config';
+const API_BASE_URL = config.API_ENDPOINT;
 
 interface User {
   id: string;
