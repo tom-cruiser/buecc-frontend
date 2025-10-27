@@ -1,5 +1,11 @@
 import React, { useEffect, useState } from "react";
-import { Award, Users, Building, Calendar } from "lucide-react";
+import {
+  Award,
+  Users,
+  Building,
+  Calendar,
+  Image as ImageIcon,
+} from "lucide-react";
 
 // Define the TeamMember type
 type TeamMember = {
@@ -8,7 +14,7 @@ type TeamMember = {
   role: string;
   bio: string;
   image: string;
-  specialties?: string[]; // Optional if your API has this
+  specialties?: string[];
 };
 
 const AboutSection: React.FC = () => {
@@ -17,40 +23,97 @@ const AboutSection: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   // Fetch team members from API
+  const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+
   useEffect(() => {
     const fetchTeamMembers = async () => {
       try {
-        const response = await fetch("http://localhost:5000/api/team-members");
+        const response = await fetch(`${API_BASE_URL}/api/team-members`);
+
         if (!response.ok) {
-          throw new Error(`API error: ${response.status}`);
+          throw new Error(`Failed to load team members: ${response.status}`);
         }
-        const result = await response.json();
-        setTeamMembers(result.data || []);
+
+        const data = await response.json();
+
+        // Handle both direct array and { data: array } formats
+        const members = Array.isArray(data) ? data : data.data || [];
+        setTeamMembers(members);
         setLoading(false);
       } catch (err) {
         console.error("Failed to fetch team members:", err);
-        setError("Failed to load team members. Please try again later.");
+        const message = err instanceof Error ? err.message : String(err);
+        setError(`Failed to load team members: ${message}`);
         setLoading(false);
       }
     };
 
     fetchTeamMembers();
-  }, []);
+  }, [API_BASE_URL]);
 
-  // Helper function to get proper image URL
-  const getImageUrl = (imagePath: string) => {
-    // If image is a full URL, use it directly
-    if (imagePath.startsWith("http")) {
-      return imagePath;
+  // Image URL helper - same logic as AdminTeamMembers
+  const getImageUrl = (imagePath: string): string => {
+    if (!imagePath) {
+      return "/placeholder-member.jpg";
     }
 
-    // If it's a relative path from the backend, prepend the API base URL
+    // Handle both development and production environments
     if (imagePath.startsWith("/uploads/")) {
-      return `http://localhost:5000${imagePath}`;
+      return process.env.NODE_ENV === "production"
+        ? `${window.location.origin}${imagePath}`
+        : `http://localhost:5000${imagePath}`;
     }
 
-    // Fallback to a default image
-    return "https://via.placeholder.com/300";
+    return imagePath || "/placeholder-member.jpg";
+  };
+
+  // Component to render individual team member
+  const TeamMemberCard = ({ member }: { member: TeamMember }) => {
+    const imageUrl = getImageUrl(member.image);
+
+    return (
+      <div className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 group">
+        {/* Image Container */}
+        <div className="relative overflow-hidden h-64">
+          <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+            <img
+              src={imageUrl}
+              alt={member.name}
+              className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+              onError={(e) => {
+                e.currentTarget.src = "/placeholder-member.jpg";
+                e.currentTarget.className =
+                  "w-full h-full object-cover bg-gray-100";
+              }}
+              loading="lazy"
+            />
+          </div>
+        </div>
+
+        {/* Content Section */}
+        <div className="p-6">
+          <h4 className="text-lg font-semibold text-gray-900 mb-1">
+            {member.name}
+          </h4>
+          <p className="text-blue-600 font-medium mb-3">{member.role}</p>
+          <p className="text-gray-600 text-sm mb-4">{member.bio}</p>
+
+          {/* Specialties */}
+          {member.specialties && member.specialties.length > 0 && (
+            <div className="flex flex-wrap gap-2 mt-3">
+              {member.specialties.map((specialty, index) => (
+                <span
+                  key={index}
+                  className="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-xs font-medium"
+                >
+                  {specialty}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -129,6 +192,11 @@ const AboutSection: React.FC = () => {
               src="https://images.pexels.com/photos/1396122/pexels-photo-1396122.jpeg?auto=compress&cs=tinysrgb&w=800"
               alt="BUECC Office Building"
               className="w-full h-full object-cover rounded-2xl shadow-lg"
+              onError={(e) => {
+                e.currentTarget.src = "/placeholder-office.jpg";
+                e.currentTarget.className =
+                  "w-full h-full object-cover bg-gray-100 rounded-2xl shadow-lg";
+              }}
             />
           </div>
         </div>
@@ -175,58 +243,35 @@ const AboutSection: React.FC = () => {
 
           {error && (
             <div className="text-center py-8">
-              <p className="text-red-500">{error}</p>
+              <div className="bg-red-50 border border-red-200 rounded-lg p-6 max-w-2xl mx-auto">
+                <p className="text-red-600 font-medium mb-4">{error}</p>
+                <button
+                  onClick={() => window.location.reload()}
+                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 font-medium"
+                >
+                  Reload Page
+                </button>
+              </div>
             </div>
           )}
 
-          {!loading && !error && (
+          {!loading && !error && teamMembers.length === 0 && (
+            <div className="text-center py-12">
+              <div className="bg-gray-100 rounded-lg p-8 max-w-md mx-auto">
+                <Users className="mx-auto mb-4 text-gray-400" size={48} />
+                <p className="text-gray-600 text-lg">
+                  No team members available at the moment.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {!loading && !error && teamMembers.length > 0 && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
               {teamMembers.map((member) => (
-                <div
-                  key={member._id}
-                  className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300"
-                >
-                  <div className="aspect-square overflow-hidden">
-                    <img
-                      src={getImageUrl(member.image)}
-                      alt={member.name}
-                      className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                    />
-                  </div>
-
-                  <div className="p-6">
-                    <h4 className="text-lg font-semibold text-gray-900 mb-1">
-                      {member.name}
-                    </h4>
-                    <p className="text-blue-600 font-medium mb-3">
-                      {member.role}
-                    </p>
-                    <p className="text-gray-600 text-sm mb-4">{member.bio}</p>
-
-                    {/* Specialties - only render if available */}
-                    {member.specialties && member.specialties.length > 0 && (
-                      <div className="flex flex-wrap gap-1">
-                        {member.specialties.map((specialty, index) => (
-                          <span
-                            key={index}
-                            className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs"
-                          >
-                            {specialty}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
+                <TeamMemberCard key={member._id} member={member} />
               ))}
             </div>
-          )}
-
-          {/* Show message if no team members found */}
-          {!loading && !error && teamMembers.length === 0 && (
-            <p className="text-center text-gray-500 py-8">
-              No team members found.
-            </p>
           )}
         </div>
 
