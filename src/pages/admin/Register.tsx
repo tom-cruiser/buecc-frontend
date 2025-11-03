@@ -11,8 +11,9 @@ import {
   CheckCircle,
 } from "lucide-react";
 
-// API Base URL - make sure this matches your backend
-const API_BASE_URL = "http://localhost:5000/api";
+import config from "../../config/config";
+// Use centralized API endpoint from config (reads VITE_API_URL)
+const API_BASE_URL = config.API_ENDPOINT;
 
 const Register: React.FC = () => {
   const [formData, setFormData] = useState({
