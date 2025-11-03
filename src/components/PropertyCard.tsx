@@ -13,6 +13,7 @@ import {
   Image as ImageIcon,
 } from "lucide-react";
 import InquiryForm from "./InquiryForm";
+import config from '../config/config';
 
 interface PropertyCardProps {
   property: Property;
@@ -86,23 +87,18 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
       return url;
     }
 
-    if (url.startsWith("/uploads")) {
-      const fullUrl =
-        process.env.NODE_ENV === "development"
-          ? `http://localhost:5000${url}` // Match your backend port
-          : `${window.location.origin}${url}`;
-      console.debug("Converted uploads path to:", fullUrl);
-      return fullUrl;
+    // Use centralized config to generate absolute image URLs. This ensures
+    // images are requested from the backend/ImageKit rather than the
+    // frontend origin (which produced 404s).
+    try {
+      const imageUrl = config.getImageUrl(url);
+      console.debug("Resolved image URL via config:", imageUrl);
+      return imageUrl;
+    } catch (e) {
+      console.warn("Failed to resolve image URL via config, falling back to raw path", e);
+      // Fallback: return the raw URL so browser can attempt to load it
+      return url.startsWith("/") ? url : `/uploads/${url}`;
     }
-
-    if (!url.startsWith("/") && !url.includes("http")) {
-      const constructedUrl = `/uploads/${url}`;
-      console.debug("Constructed URL from filename:", constructedUrl);
-      return constructedUrl;
-    }
-
-    console.debug("Returning URL as-is:", url);
-    return url;
   };
 
   const mainImageUrl = getMainImageUrl();
