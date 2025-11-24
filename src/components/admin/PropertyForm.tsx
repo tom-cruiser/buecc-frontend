@@ -116,7 +116,14 @@ const PropertyForm: React.FC<PropertyFormProps> = ({
 
       setFormData((prev) => ({
         ...prev,
-        [name]: type === "checkbox" ? checked : type === "number" ? Number(value) : value,
+        [name]:
+          type === "checkbox"
+            ? checked
+            : type === "number"
+            ? value === ""
+              ? undefined
+              : Number(value)
+            : value,
       }));
     },
     []
