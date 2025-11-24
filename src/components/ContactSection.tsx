@@ -46,11 +46,11 @@ const ContactSection: React.FC = () => {
             return;
           }
 
-          // Load inject script
+          // Load Botpress inject script (v3.4)
           await new Promise((resolve, reject) => {
             const injectScript = document.createElement("script");
-            injectScript.src =
-              "https://cdn.botpress.cloud/webchat/v3.3/inject.js";
+            injectScript.src = "https://cdn.botpress.cloud/webchat/v3.4/inject.js";
+            // follow the original snippet behavior (no defer) — allow async loading
             injectScript.async = true;
             injectScript.onload = resolve;
             injectScript.onerror = reject;
