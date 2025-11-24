@@ -24,7 +24,7 @@ const PropertyForm: React.FC<PropertyFormProps> = ({
       propertyId: "",
       type: "house",
       status: "available",
-      price: 0,
+      price: undefined,
       currency: "USD",
       location: {
         address: "",
@@ -32,7 +32,7 @@ const PropertyForm: React.FC<PropertyFormProps> = ({
         neighborhood: "",
         coordinates: { lat: 0, lng: 0 },
       },
-      area: 0,
+      area: undefined,
       unit: "sqm",
       bedrooms: 0,
       bathrooms: 0,
@@ -267,7 +267,7 @@ const PropertyForm: React.FC<PropertyFormProps> = ({
                     className="mt-1 block w-full rounded-md border border-gray-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
                     type="number"
                     name="price"
-                    value={formData.price || 0}
+                    value={formData.price ?? ""}
                     onChange={handleChange}
                     required
                   />
@@ -290,7 +290,7 @@ const PropertyForm: React.FC<PropertyFormProps> = ({
                     className="mt-1 block w-full rounded-md border border-gray-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
                     type="number"
                     name="area"
-                    value={formData.area || 0}
+                    value={formData.area ?? ""}
                     onChange={handleChange}
                     required
                   />

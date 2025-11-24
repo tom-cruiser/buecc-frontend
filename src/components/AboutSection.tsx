@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import config from "../config/config";
 import {
   Award,
   Users,
@@ -23,7 +24,7 @@ const AboutSection: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   // Fetch team members from API
-  const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+  const API_BASE_URL = config.API_BASE_URL;
 
   useEffect(() => {
     const fetchTeamMembers = async () => {
@@ -51,20 +52,10 @@ const AboutSection: React.FC = () => {
     fetchTeamMembers();
   }, [API_BASE_URL]);
 
-  // Image URL helper - same logic as AdminTeamMembers
+  // Use centralized image URL helper
   const getImageUrl = (imagePath: string): string => {
-    if (!imagePath) {
-      return "/placeholder-member.jpg";
-    }
-
-    // Handle both development and production environments
-    if (imagePath.startsWith("/uploads/")) {
-      return process.env.NODE_ENV === "production"
-        ? `${window.location.origin}${imagePath}`
-        : `http://localhost:5000${imagePath}`;
-    }
-
-    return imagePath || "/placeholder-member.jpg";
+    if (!imagePath) return "/placeholder-member.jpg";
+    return config.getImageUrl(imagePath) || "/placeholder-member.jpg";
   };
 
   // Component to render individual team member

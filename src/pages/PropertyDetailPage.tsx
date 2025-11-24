@@ -3,8 +3,9 @@ import { useParams, Navigate, useNavigate } from "react-router-dom";
 import PropertyModal from "../components/PropertyModal";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
+import config from "../config/config";
 
-const API_BASE_URL = "http://localhost:5000/api";
+const API_BASE_URL = config.API_ENDPOINT;
 
 interface PropertyImage {
   url?: string;
@@ -99,30 +100,11 @@ const PropertyDetailPage: React.FC = () => {
 
       // If it's already a complete URL (http/https), return as-is
       if (/^https?:\/\//i.test(imageUrl)) {
-        console.log(`Complete URL found: ${imageUrl}`);
         return imageUrl;
       }
 
-      // If it starts with /uploads, it's already a relative path from your backend
-      if (imageUrl.startsWith("/uploads")) {
-        const fullUrl = `http://localhost:5000${imageUrl}`;
-        console.log(`Uploads path found, converted to: ${fullUrl}`);
-        return fullUrl;
-      }
-
-      // If it's just a filename, assume it's in the uploads directory
-      if (imageUrl && !imageUrl.includes("/")) {
-        const fullUrl = `http://localhost:5000/uploads/${imageUrl}`;
-        console.log(`Filename found, converted to: ${fullUrl}`);
-        return fullUrl;
-      }
-
-      // If it's any other path, try to construct the full URL
-      const fullUrl = `http://localhost:5000${
-        imageUrl.startsWith("/") ? "" : "/"
-      }${imageUrl}`;
-      console.log(`Other path found, converted to: ${fullUrl}`);
-      return fullUrl;
+      // Delegate URL construction to centralized helper
+      return config.getImageUrl(imageUrl);
     });
 
     console.log("Final processed URLs:", processedUrls);
